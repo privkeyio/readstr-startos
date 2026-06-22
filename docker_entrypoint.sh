@@ -9,16 +9,6 @@ DB_NAME=readstr
 DB_USER=readstr
 DB_PASSWORD="${DB_PASSWORD:?DB_PASSWORD is required}"
 
-mkdir -p "$PGDATA"
-chown -R postgres:postgres "$PGDATA"
-
-if [ ! -s "$PGDATA/PG_VERSION" ]; then
-  su-exec postgres initdb -D "$PGDATA" -U postgres --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8
-fi
-
-su-exec postgres pg_ctl -D "$PGDATA" -w \
-  -o "-c listen_addresses='$PGHOST' -p $PGPORT -c unix_socket_directories='/tmp'" start
-
 stop_postgres() {
   su-exec postgres pg_ctl -D "$PGDATA" -m fast -w stop || true
 }
@@ -31,6 +21,15 @@ shutdown() {
   exit 0
 }
 trap shutdown TERM INT
+
+mkdir -p "$PGDATA"
+if [ ! -s "$PGDATA/PG_VERSION" ]; then
+  chown -R postgres:postgres "$PGDATA"
+  su-exec postgres initdb -D "$PGDATA" -U postgres --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8
+fi
+
+su-exec postgres pg_ctl -D "$PGDATA" -w \
+  -o "-c listen_addresses='$PGHOST' -p $PGPORT -c unix_socket_directories='/tmp'" start
 
 psql() {
   su-exec postgres psql -h /tmp -p "$PGPORT" -U postgres -v ON_ERROR_STOP=1 "$@"

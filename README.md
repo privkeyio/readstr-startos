@@ -32,5 +32,3 @@ The `readstr` git submodule pins the upstream source built into the image (the `
 - **Release** (`.github/workflows/release.yml`): on `v*.*` tags, builds and publishes. Requires `DEV_KEY` plus the registry/S3 vars (`RELEASE_REGISTRY`, `S3_S9PKS_BASE_URL`) and secrets (`S3_ACCESS_KEY`, `S3_SECRET_KEY`).
 
 See [`instructions.md`](instructions.md) for setup and usage.
-</content>
-</invoke>
