@@ -1,6 +1,10 @@
 #!/bin/sh
 set -e
 
+# The StartOS daemon launch does not inherit the image WORKDIR, so anchor the
+# cwd here: `npx prisma` needs ./prisma and `node server.js` lives in /app.
+cd /app
+
 PGDATA="${PGDATA:-/data/postgres}"
 export PGDATA
 PGHOST=127.0.0.1
@@ -23,9 +27,13 @@ shutdown() {
 trap shutdown TERM INT
 
 mkdir -p "$PGDATA"
+# Always re-assert ownership: on restore-from-backup the data dir already has a
+# PG_VERSION but may land owned by root, which would make pg_ctl start fail.
+chown -R postgres:postgres "$PGDATA"
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
-  chown -R postgres:postgres "$PGDATA"
-  su-exec postgres initdb -D "$PGDATA" -U postgres --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8
+  # Local socket uses peer auth (OS user postgres -> role postgres), so the
+  # admin commands below need no password; the app connects over TCP with scram.
+  su-exec postgres initdb -D "$PGDATA" -U postgres --auth-local=peer --auth-host=scram-sha-256 --encoding=UTF8
 fi
 
 su-exec postgres pg_ctl -D "$PGDATA" -w \
@@ -35,13 +43,16 @@ psql() {
   su-exec postgres psql -h /tmp -p "$PGPORT" -U postgres -v ON_ERROR_STOP=1 "$@"
 }
 
+# Bind the password as a psql variable (:'pw') so libpq quotes/escapes it,
+# rather than interpolating it into the SQL string. DB_USER/DB_NAME are fixed
+# constants, quoted as identifiers for correctness.
 if ! psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
-  psql -c "CREATE ROLE $DB_USER LOGIN PASSWORD '$DB_PASSWORD'"
+  psql -v pw="$DB_PASSWORD" -c "CREATE ROLE \"$DB_USER\" LOGIN PASSWORD :'pw'"
 fi
-psql -c "ALTER ROLE $DB_USER LOGIN PASSWORD '$DB_PASSWORD'"
+psql -v pw="$DB_PASSWORD" -c "ALTER ROLE \"$DB_USER\" LOGIN PASSWORD :'pw'"
 
 if ! psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1; then
-  psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER"
+  psql -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\""
 fi
 
 export DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@$PGHOST:$PGPORT/$DB_NAME"
