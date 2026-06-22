@@ -16,15 +16,19 @@ DB_PASSWORD="${DB_PASSWORD:?DB_PASSWORD is required}"
 stop_postgres() {
   su-exec postgres pg_ctl -D "$PGDATA" -m fast -w stop || true
 }
-shutdown() {
+cleanup() {
   if [ -n "$APP_PID" ]; then
     kill "$APP_PID" 2>/dev/null || true
     wait "$APP_PID" 2>/dev/null || true
   fi
   stop_postgres
-  exit 0
 }
-trap shutdown TERM INT
+# Always stop postgres when the script exits, including on error. pg_ctl
+# daemonizes postgres detached from this script, so without this an early exit
+# would leave it running and the next launch would fail on the postmaster.pid
+# lock, looping forever.
+trap cleanup EXIT
+trap 'exit 143' TERM INT
 
 mkdir -p "$PGDATA"
 # Always re-assert ownership: on restore-from-backup the data dir already has a
@@ -43,13 +47,17 @@ psql() {
   su-exec postgres psql -h /tmp -p "$PGPORT" -U postgres -v ON_ERROR_STOP=1 "$@"
 }
 
-# Bind the password as a psql variable (:'pw') so libpq quotes/escapes it,
-# rather than interpolating it into the SQL string. DB_USER/DB_NAME are fixed
-# constants, quoted as identifiers for correctness.
+# Pass the password as a psql variable via stdin: :'pw' is interpolated and
+# safely quoted by psql in stdin/-f mode (it is NOT processed in -c strings).
+# DB_USER/DB_NAME are fixed constants, quoted as identifiers.
 if ! psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
-  psql -v pw="$DB_PASSWORD" -c "CREATE ROLE \"$DB_USER\" LOGIN PASSWORD :'pw'"
+  psql -v pw="$DB_PASSWORD" <<EOSQL
+CREATE ROLE "$DB_USER" LOGIN PASSWORD :'pw';
+EOSQL
 fi
-psql -v pw="$DB_PASSWORD" -c "ALTER ROLE \"$DB_USER\" LOGIN PASSWORD :'pw'"
+psql -v pw="$DB_PASSWORD" <<EOSQL
+ALTER ROLE "$DB_USER" LOGIN PASSWORD :'pw';
+EOSQL
 
 if ! psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1; then
   psql -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\""
@@ -63,7 +71,6 @@ until npx prisma migrate deploy; do
   attempts=$((attempts + 1))
   if [ "$attempts" -ge "$max_attempts" ]; then
     echo "prisma migrate deploy failed after $max_attempts attempts" >&2
-    stop_postgres
     exit 1
   fi
   echo "migrate deploy failed, retrying ($attempts/$max_attempts)..." >&2
@@ -76,5 +83,4 @@ set +e
 wait "$APP_PID"
 APP_EXIT=$?
 set -e
-stop_postgres
 exit "$APP_EXIT"
