@@ -36,7 +36,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
 
   return sdk.Daemons.of(effects).addDaemon('primary', {
     subcontainer,
-    exec: { command: ['/usr/local/bin/docker_entrypoint.sh'] },
+    exec: { command: ['/usr/local/bin/docker_entrypoint.sh'], env },
     ready: {
       display: i18n('Web UI'),
       fn: () =>
