@@ -5,7 +5,7 @@ Readstr is a self-hosted, Google Reader-style feed aggregator. It brings RSS/Ato
 ## First-time setup
 
 1. **Open the Web UI.** Launch the interface from this service's page in StartOS.
-2. **Sign in with Nostr.** Click "Connect with Nostr" and authorize with a browser extension (NIP-07, e.g. nos2x or Alby) on desktop, or pair a remote signer (NIP-46, e.g. Amber) with a `bunker://` connection string on mobile. Your npub is your identity — there is no separate account.
+2. **Sign in with Nostr.** Click "Connect with Nostr" and authorize with a browser extension (NIP-07, e.g. nos2x or Alby) on desktop, or pair a remote signer (NIP-46, e.g. Amber) with a `bunker://` connection string on mobile. Your npub is your identity, so there is no separate account.
 3. **Add feeds.** Use "Add Feed" to subscribe to RSS feeds, Nostr authors (npub or NIP-05), or YouTube/Rumble channels.
 
 ## Login on a custom address
@@ -23,4 +23,4 @@ Saving the configuration restarts the service.
 
 ## Data and backups
 
-All state — the PostgreSQL database and this package's settings — lives in the service's data volume and is captured by StartOS backups. Restoring a backup brings back your feeds, subscriptions, and reading state.
+All state, the PostgreSQL database and this package's settings, lives in the service's data volume and is captured by StartOS backups. Restoring a backup brings back your feeds, subscriptions, and reading state.
