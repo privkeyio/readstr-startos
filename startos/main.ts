@@ -33,6 +33,15 @@ export const main = sdk.setupMain(async ({ effects }) => {
     .filter(Boolean)
   const allowedHosts = [...new Set([...assignedHosts, ...userHosts])]
 
+  // Diagnostic: confirm which hostnames StartOS reports for this interface so we
+  // can verify the Tor .onion is captured into the NIP-98 allow-list.
+  console.info(
+    `NIP-98 interface hostnames: ${JSON.stringify(
+      (ui?.addressInfo?.hostnames ?? []).map((h) => h.hostname),
+    )}`,
+  )
+  console.info(`NIP-98 allowed hosts: ${allowedHosts.join(', ') || '(none)'}`)
+
   const env: Record<string, string> = {
     NODE_ENV: 'production',
     PORT: `${uiPort}`,
