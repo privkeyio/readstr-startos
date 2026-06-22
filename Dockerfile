@@ -16,7 +16,7 @@ RUN npm run build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
-RUN apk add --no-cache openssl postgresql15 postgresql15-contrib su-exec
+RUN apk add --no-cache openssl postgresql16 postgresql16-contrib su-exec
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
