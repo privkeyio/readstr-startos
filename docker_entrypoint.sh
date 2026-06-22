@@ -13,19 +13,27 @@ mkdir -p "$PGDATA"
 chown -R postgres:postgres "$PGDATA"
 
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
-  su-exec postgres initdb -D "$PGDATA" -U postgres --auth=trust --encoding=UTF8
+  su-exec postgres initdb -D "$PGDATA" -U postgres --auth-local=trust --auth-host=scram-sha-256 --encoding=UTF8
 fi
 
 su-exec postgres pg_ctl -D "$PGDATA" -w \
-  -o "-c listen_addresses='$PGHOST' -p $PGPORT" start
+  -o "-c listen_addresses='$PGHOST' -p $PGPORT -c unix_socket_directories='/tmp'" start
 
 stop_postgres() {
   su-exec postgres pg_ctl -D "$PGDATA" -m fast -w stop || true
 }
-trap 'stop_postgres; [ -n "$APP_PID" ] && kill "$APP_PID" 2>/dev/null' TERM INT
+shutdown() {
+  if [ -n "$APP_PID" ]; then
+    kill "$APP_PID" 2>/dev/null || true
+    wait "$APP_PID" 2>/dev/null || true
+  fi
+  stop_postgres
+  exit 0
+}
+trap shutdown TERM INT
 
 psql() {
-  su-exec postgres psql -h "$PGHOST" -p "$PGPORT" -U postgres -v ON_ERROR_STOP=1 "$@"
+  su-exec postgres psql -h /tmp -p "$PGPORT" -U postgres -v ON_ERROR_STOP=1 "$@"
 }
 
 if ! psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
@@ -54,4 +62,9 @@ done
 
 node server.js &
 APP_PID=$!
+set +e
 wait "$APP_PID"
+APP_EXIT=$?
+set -e
+stop_postgres
+exit "$APP_EXIT"
