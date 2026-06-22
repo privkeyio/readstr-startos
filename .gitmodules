@@ -1,0 +1,4 @@
+[submodule "readstr"]
+	path = readstr
+	url = https://github.com/privkeyio/readstr.git
+	branch = main

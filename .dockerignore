@@ -1,0 +1,7 @@
+.git
+.gitmodules
+node_modules
+javascript
+*.s9pk
+readstr/node_modules
+readstr/.next
