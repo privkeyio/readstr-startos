@@ -12,6 +12,27 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // The image bundles PostgreSQL; the entrypoint boots it on localhost, runs
   // prisma migrations, then starts the Next.js server. Both the database and
   // the app data live under the mounted volume so backups capture everything.
+  // Readstr's NIP-98 auth binds each signed request to the host the browser
+  // used and rejects hosts not on its allow-list. Allow every address StartOS
+  // assigns this interface (.onion, .local, LAN IP) so login works over Tor and
+  // LAN out of the box, plus any custom hosts set via Configure. .const() reruns
+  // this (restarting the daemon) if the assigned addresses change later, e.g.
+  // when a Tor address is added.
+  const ui = await sdk.serviceInterface.getOwn(effects, 'ui').const()
+  const assignedHosts = (ui?.addressInfo?.hostnames ?? [])
+    .map((h) => h.hostname)
+    .filter(
+      (h) =>
+        !!h &&
+        !['localhost', '127.0.0.1', '::1'].includes(h) &&
+        !h.startsWith('fe80'),
+    )
+  const userHosts = (store.nip98AllowedHosts ?? '')
+    .split(',')
+    .map((h) => h.trim())
+    .filter(Boolean)
+  const allowedHosts = [...new Set([...assignedHosts, ...userHosts])]
+
   const env: Record<string, string> = {
     NODE_ENV: 'production',
     PORT: `${uiPort}`,
@@ -20,7 +41,7 @@ export const main = sdk.setupMain(async ({ effects }) => {
     DB_PASSWORD: store.dbPassword,
     DEFAULT_RELAYS: store.defaultRelays.join(','),
   }
-  if (store.nip98AllowedHosts) env.NIP98_ALLOWED_HOSTS = store.nip98AllowedHosts
+  if (allowedHosts.length) env.NIP98_ALLOWED_HOSTS = allowedHosts.join(',')
 
   const subcontainer = await sdk.SubContainer.of(
     effects,

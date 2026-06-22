@@ -95,7 +95,7 @@ See [instructions.md](instructions.md) for the user-facing walkthrough.
 | `PGDATA` | `/data/postgres` | Bundled PostgreSQL data dir (on the backed-up `main` volume) |
 | `DB_PASSWORD` | (auto-generated) | Password for the bundled PostgreSQL role |
 | `DEFAULT_RELAYS` | (Configure) | Nostr relays for long-form content and profiles, comma-separated |
-| `NIP98_ALLOWED_HOSTS` | (Configure, optional) | Hostnames allowed in NIP-98 auth tokens; omitted means the app default |
+| `NIP98_ALLOWED_HOSTS` | (auto + Configure) | Hostnames allowed in NIP-98 auth: the interface's StartOS-assigned addresses (Tor, `.local`, LAN IP), plus any custom hosts from Configure |
 
 Default relays are `wss://relay.damus.io`, `wss://nos.lol`, and `wss://relay.nostr.band`. The Configure action accepts any number of `wss://` relays; saving restarts the service to apply.
 
@@ -161,7 +161,7 @@ None.
 
 ## Limitations and Differences
 
-1. **Login on a custom address requires Allowed Hosts.** Readstr verifies the host in the NIP-98 auth token, so set **Allowed Hosts** in Configure to any address you use besides the default, or login may be rejected.
+1. **Custom domains require Allowed Hosts.** Readstr verifies the host in the NIP-98 auth token. The package auto-allows every address StartOS assigns the interface (Tor `.onion`, `.local`, LAN IP), so Tor and LAN work out of the box; for a custom domain you added yourself, set it in **Allowed Hosts** in Configure or login at that address may be rejected.
 2. **Bundled single-node PostgreSQL.** The database runs inside the service container, not as a separate StartOS service, and is initialized and migrated automatically on first start.
 3. **Nostr sign-in required.** There is no separate account system; your npub is your identity.
 

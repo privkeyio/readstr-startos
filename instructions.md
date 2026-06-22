@@ -10,14 +10,14 @@ Readstr is a self-hosted, Google Reader-style feed aggregator. It brings RSS/Ato
 
 ## Login on a custom address
 
-Readstr verifies the host in your NIP-98 auth token. If you reach this server at an address other than its default, set **Allowed Hosts** in the **Configure** action to the hostname(s) you use (comma-separated, hostname only). Otherwise login may be rejected. Leave it blank to use the app's built-in default.
+Readstr verifies the host in your NIP-98 auth token. Every address StartOS assigns this service (its `.onion`, `.local`, and LAN IP) is allowed automatically, so login works over Tor and on your LAN with no setup. If you reach the server at a custom domain you added yourself, set it in **Allowed Hosts** in the **Configure** action (comma-separated, hostname only); otherwise login at that address may be rejected.
 
 ## Configuration
 
 Use the **Configure** action to set:
 
 - **Default Relays:** the Nostr relays used to fetch long-form content and profiles. Defaults to `wss://relay.damus.io`, `wss://nos.lol`, and `wss://relay.nostr.band`.
-- **Allowed Hosts:** comma-separated hostnames clients use to reach this server, for NIP-98 login. Leave blank to use the app default.
+- **Allowed Hosts:** extra hostnames to accept for NIP-98 login, for custom domains you added yourself. The service's StartOS addresses (Tor, `.local`, LAN IP) are already allowed automatically.
 
 Saving the configuration restarts the service.
 
