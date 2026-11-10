@@ -5,7 +5,7 @@ export const manifest = setupManifest({
   id: 'readstr',
   title: 'Readstr',
   license: 'MIT',
-  packageRepo: 'https://github.com/privkeyio/readstr-startos',
+  packageRepo: 'https://github.com/Start9-Community/readstr-startos',
   upstreamRepo: 'https://github.com/privkeyio/readstr',
   marketingUrl: 'https://github.com/privkeyio/readstr',
   donationUrl: null,
@@ -13,22 +13,22 @@ export const manifest = setupManifest({
     short,
     long,
   },
-  volumes: ['main'],
+  volumes: ['main', 'db'],
   images: {
     readstr: {
       source: {
-        dockerBuild: {},
+        dockerBuild: {
+          workdir: './readstr',
+          dockerfile: './Dockerfile',
+        },
+      },
+      arch: ['x86_64', 'aarch64'],
+    },
+    postgres: {
+      source: {
+        dockerTag: 'postgres:16-alpine',
       },
       arch: ['x86_64', 'aarch64'],
     },
   },
-  alerts: {
-    install: null,
-    update: null,
-    uninstall: null,
-    restore: null,
-    start: null,
-    stop: null,
-  },
-  dependencies: {},
 })

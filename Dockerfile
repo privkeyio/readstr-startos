@@ -1,41 +1,68 @@
-FROM node:22-alpine AS deps
+# Upstream's readstr/Dockerfile with the Prisma CLI step changed; build context is ./readstr.
+# Multi-stage build for Next.js application
+FROM node:22-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
-COPY readstr/package.json readstr/package-lock.json* ./
-COPY readstr/prisma ./prisma
+
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma
 RUN npm ci
 
-FROM node:22-alpine AS builder
+# Rebuild the source code only when needed
+FROM base AS builder
 WORKDIR /app
 RUN apk add --no-cache openssl
 COPY --from=deps /app/node_modules ./node_modules
-COPY readstr/ .
+COPY . .
+
+# Generate Prisma client
 RUN npx prisma generate
-ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build the application
+ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
-FROM node:22-alpine AS runner
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
-RUN apk add --no-cache openssl postgresql16 postgresql16-contrib su-exec
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
 
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+RUN apk add --no-cache openssl
+# The base image's CA store is only as current as its last release, and Node otherwise trusts its compiled-in roots.
+RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
+ && if [ -f /etc/ssl/certs/ca-certificates.crt.apk-new ]; then mv /etc/ssl/certs/ca-certificates.crt.apk-new /etc/ssl/certs/ca-certificates.crt; fi \
+ && ! grep -q MIICTjCCAdOgAwIBAgIKPPYHqWhwDtqLhDAKBggqhkjOPQQDAzBr /etc/ssl/certs/ca-certificates.crt
+ENV NODE_OPTIONS=--use-openssl-ca
+
+# Copy necessary files
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# Pin the Prisma CLI into the image so `prisma migrate deploy` resolves locally
-# at boot with no network access.
-RUN npm install --no-save prisma@5.22.0
+# Bake the pinned Prisma CLI into the runtime image so `prisma migrate deploy`
+# resolves locally (no boot-time download, works as the non-root nextjs user).
+# Installed outside /app: npm run there resolves the app's whole manifest and crashes.
+RUN npm install --prefix /opt/prisma-cli --no-save --no-fund --no-audit prisma@5.22.0 \
+  && mkdir -p node_modules/.bin \
+  && ln -s /opt/prisma-cli/node_modules/.bin/prisma node_modules/.bin/prisma
 
-COPY docker_entrypoint.sh /usr/local/bin/docker_entrypoint.sh
-RUN chmod +x /usr/local/bin/docker_entrypoint.sh
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+
+USER nextjs
 
 EXPOSE 3000
-ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
 
-ENTRYPOINT ["/usr/local/bin/docker_entrypoint.sh"]
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

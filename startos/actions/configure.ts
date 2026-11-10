@@ -7,7 +7,7 @@ const { InputSpec, Value, List } = sdk
 
 const relayPattern = {
   regex: '^wss://.+',
-  description: 'Relay URLs must start with wss://',
+  description: i18n('Relay URLs must start with wss://'),
 }
 
 const inputSpec = InputSpec.of({
@@ -16,21 +16,25 @@ const inputSpec = InputSpec.of({
       {
         name: i18n('Default Relays'),
         description: i18n(
-          'Nostr relays used to fetch long-form content and profiles',
+          'The default Nostr relays Readstr uses to fetch long-form content and profiles. You can also manage relays within the app.',
         ),
         default: defaultRelays,
       },
       { patterns: [relayPattern], placeholder: 'wss://nos.lol' },
     ),
   ),
-  nip98AllowedHosts: Value.text({
-    name: i18n('Allowed Hosts'),
-    description: i18n(
-      'Comma-separated hostnames clients use to reach this server (required for login when not using the default host). Leave blank to use the app default.',
+  nip98AllowedHosts: Value.list(
+    List.text(
+      {
+        name: i18n('Allowed Hosts'),
+        description: i18n(
+          'Extra hostnames to accept for NIP-98 login, such as a custom domain you added. The addresses StartOS assigns this service are always allowed.',
+        ),
+        default: [],
+      },
+      { placeholder: 'readstr.example.com' },
     ),
-    required: false,
-    default: null,
-  }),
+  ),
 })
 
 export const configure = sdk.Action.withInput(
@@ -48,13 +52,13 @@ export const configure = sdk.Action.withInput(
     const s = await storeJson.read().once()
     return {
       defaultRelays: s?.defaultRelays ?? defaultRelays,
-      nip98AllowedHosts: s?.nip98AllowedHosts || null,
+      nip98AllowedHosts: s?.nip98AllowedHosts ?? [],
     }
   },
   async ({ effects, input }) => {
     await storeJson.merge(effects, {
       defaultRelays: input.defaultRelays,
-      nip98AllowedHosts: input.nip98AllowedHosts ?? '',
+      nip98AllowedHosts: input.nip98AllowedHosts,
     })
     await effects.restart()
     return {
