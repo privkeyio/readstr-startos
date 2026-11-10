@@ -36,11 +36,6 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 RUN apk add --no-cache openssl
-# The base image's CA store is only as current as its last release, and Node otherwise trusts its compiled-in roots.
-RUN apk add --no-cache --upgrade ca-certificates ca-certificates-bundle \
- && if [ -f /etc/ssl/certs/ca-certificates.crt.apk-new ]; then mv /etc/ssl/certs/ca-certificates.crt.apk-new /etc/ssl/certs/ca-certificates.crt; fi \
- && ! grep -q MIICTjCCAdOgAwIBAgIKPPYHqWhwDtqLhDAKBggqhkjOPQQDAzBr /etc/ssl/certs/ca-certificates.crt
-ENV NODE_OPTIONS=--use-openssl-ca
 
 # Copy necessary files
 COPY --from=builder /app/public ./public
