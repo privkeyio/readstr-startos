@@ -29,7 +29,7 @@ repo. The bundled database is the stock `postgres` image, pinned by tag in the m
    ```
 
 2. Diff the new `readstr/Dockerfile` against the package's `Dockerfile` and carry upstream's
-   changes over. The package's copy differs in the Prisma CLI step and in the runtime stage's CA-store upgrade with `NODE_OPTIONS=--use-openssl-ca`; keep both.
+   changes over. The package's copy differs in the Prisma CLI step; keep it.
 
 ## Bumping PostgreSQL
 
