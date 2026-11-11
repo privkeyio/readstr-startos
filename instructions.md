@@ -26,5 +26,15 @@ Use **Configure** to set:
 
 - **Default Relays** — the Nostr relays Readstr uses to fetch long-form content and profiles; you can also manage relays from within the app. Defaults to `wss://relay.damus.io`, `wss://nos.lol`, and `wss://relay.nostr.band`.
 - **Allowed Hosts** — extra hostnames to accept for NIP-98 login, for custom domains you added yourself.
+- **Flash Checkout URL** — optional. Your Flash plan signup URL (`https://…`); Readstr adds `?ref=<pubkey>` so the subscribing reader can be identified.
+- **Flash Webhook Secret** — optional. The signing secret (`whsec_…`) of your Flash webhook endpoint; Readstr uses it to check that subscription notifications really come from Flash.
 
 Saving restarts the service so the new settings take effect.
+
+### Accepting Flash subscriptions
+
+1. In your Flash dashboard, create a plan and copy its signup URL into **Flash Checkout URL**.
+2. Add a webhook endpoint in Flash pointing at `https://<your domain>/api/webhooks/flash`, where `<your domain>` is an address of this service that Flash can reach.
+3. Copy that endpoint's signing secret (`whsec_…`) into **Flash Webhook Secret** and save.
+
+Without the secret, Readstr rejects every Flash notification and no subscription is recorded.

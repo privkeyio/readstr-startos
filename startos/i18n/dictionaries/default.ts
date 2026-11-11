@@ -15,7 +15,7 @@ const dict = {
 
   // actions/configure.ts
   Configure: 8,
-  'Configure the Nostr relays and allowed hosts': 9,
+  'Configure the Nostr relays, allowed hosts and Flash payments': 9,
   'Default Relays': 10,
   'The default Nostr relays Readstr uses to fetch long-form content and profiles. You can also manage relays within the app.': 11,
   'Allowed Hosts': 12,
@@ -23,6 +23,12 @@ const dict = {
   'Relay URLs must start with wss://': 14,
   'Configuration saved': 15,
   'The service is restarting with the new settings.': 16,
+  'Flash Checkout URL': 17,
+  'The Flash plan signup URL. Readstr appends ?ref=<pubkey> to it to identify the subscribing reader. Leave empty if you do not offer Flash subscriptions.': 18,
+  'Must be an https:// URL': 19,
+  'Flash Webhook Secret': 20,
+  'The signing secret (whsec_…) of your Flash webhook endpoint. Readstr uses it to verify the Flash-Signature on every request to /api/webhooks/flash and rejects requests without a valid one.': 21,
+  'Must start with whsec_': 22,
 } as const
 
 /**

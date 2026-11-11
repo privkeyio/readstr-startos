@@ -1,3 +1,4 @@
+import { z } from '@start9labs/start-sdk'
 import { sdk } from '../sdk'
 import { i18n } from '../i18n'
 import { storeJson } from '../fileModels/store.json'
@@ -35,13 +36,48 @@ const inputSpec = InputSpec.of({
       { placeholder: 'readstr.example.com' },
     ),
   ),
+  flashCheckoutUrl: Value.text({
+    name: i18n('Flash Checkout URL'),
+    description: i18n(
+      'The Flash plan signup URL. Readstr appends ?ref=<pubkey> to it to identify the subscribing reader. Leave empty if you do not offer Flash subscriptions.',
+    ),
+    required: false,
+    default: null,
+    placeholder: 'https://',
+    patterns: [
+      {
+        regex: '^https://\\S+$',
+        description: i18n('Must be an https:// URL'),
+      },
+    ],
+  }),
+  flashWebhookSecret: Value.text({
+    name: i18n('Flash Webhook Secret'),
+    description: i18n(
+      'The signing secret (whsec_…) of your Flash webhook endpoint. Readstr uses it to verify the Flash-Signature on every request to /api/webhooks/flash and rejects requests without a valid one.',
+    ),
+    required: false,
+    default: null,
+    masked: true,
+    placeholder: 'whsec_…',
+    patterns: [
+      {
+        regex: '^whsec_\\S+$',
+        description: i18n('Must start with whsec_'),
+      },
+    ],
+  }),
 })
+
+const orNull = (v: string | null | undefined) => v?.trim() || null
 
 export const configure = sdk.Action.withInput(
   'configure',
   async ({ effects }) => ({
     name: i18n('Configure'),
-    description: i18n('Configure the Nostr relays and allowed hosts'),
+    description: i18n(
+      'Configure the Nostr relays, allowed hosts and Flash payments',
+    ),
     warning: null,
     allowedStatuses: 'any',
     group: null,
@@ -53,12 +89,22 @@ export const configure = sdk.Action.withInput(
     return {
       defaultRelays: s?.defaultRelays ?? defaultRelays,
       nip98AllowedHosts: s?.nip98AllowedHosts ?? [],
+      flashCheckoutUrl: s?.flashCheckoutUrl ?? null,
+      flashWebhookSecret: s?.flashWebhookSecret ?? null,
     }
   },
   async ({ effects, input }) => {
+    if (
+      input.flashCheckoutUrl &&
+      !z.url().safeParse(input.flashCheckoutUrl).success
+    ) {
+      throw new Error(i18n('Must be an https:// URL'))
+    }
     await storeJson.merge(effects, {
       defaultRelays: input.defaultRelays,
       nip98AllowedHosts: input.nip98AllowedHosts,
+      flashCheckoutUrl: orNull(input.flashCheckoutUrl),
+      flashWebhookSecret: orNull(input.flashWebhookSecret),
     })
     await effects.restart()
     return {

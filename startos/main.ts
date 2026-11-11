@@ -69,6 +69,9 @@ export const main = sdk.setupMain(async ({ effects }) => {
   // read .const() above, because adding a Tor address later must restart the
   // service or login silently fails on the new address.
   if (allowedHosts.length) env.NIP98_ALLOWED_HOSTS = allowedHosts.join(',')
+  if (store.flashCheckoutUrl) env.FLASH_CHECKOUT_URL = store.flashCheckoutUrl
+  if (store.flashWebhookSecret)
+    env.FLASH_WEBHOOK_SECRET = store.flashWebhookSecret
 
   return sdk.Daemons.of(effects)
     .addDaemon('postgres', {
