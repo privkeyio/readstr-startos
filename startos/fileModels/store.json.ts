@@ -13,6 +13,9 @@ const storeConfigSchema = z.looseObject({
   // Extra hostnames allowed in NIP-98 auth tokens, for custom domains the user
   // added. The StartOS-assigned addresses are always allowed (see main.ts).
   nip98AllowedHosts: z.array(z.string()).catch([]),
+  // Flash payments, set via Configure; each is passed to the app only when set.
+  flashCheckoutUrl: z.string().nullable().catch(null),
+  flashWebhookSecret: z.string().nullable().catch(null),
 })
 
 export type StoreConfig = z.infer<typeof storeConfigSchema>

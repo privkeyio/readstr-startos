@@ -61,14 +61,14 @@ Two volumes, backed up by different mechanisms.
 
 **The application container mounts nothing.** Everything Readstr knows — subscriptions, read state, cached articles — is in PostgreSQL, and the package's own settings are read by this package's code rather than by the app.
 
-| Path                            | Written by          | Holds                                        |
-| ------------------------------- | ------------------- | -------------------------------------------- |
-| _PGDATA_                        | PostgreSQL          | Feeds, subscriptions, and everything read    |
-| `start9/store.json` (on `main`) | Init and the action | The database password, relays, allowed hosts |
+| Path                            | Written by          | Holds                                                        |
+| ------------------------------- | ------------------- | ------------------------------------------------------------ |
+| _PGDATA_                        | PostgreSQL          | Feeds, subscriptions, and everything read                    |
+| `start9/store.json` (on `main`) | Init and the action | The database password, relays, allowed hosts, Flash settings |
 
 ## File Models
 
-One model, holding three things.
+One model, holding four things.
 
 | File         | Format | Modelled                | Written by          |
 | ------------ | ------ | ----------------------- | ------------------- |
@@ -77,6 +77,7 @@ One model, holding three things.
 - **The database password**, generated once at install. The cluster was initialized with it, so it is not rotatable — and it is generated URL-safe because it is embedded in the connection string.
 - **The default relay list**, seeded from the package's defaults and passed to the application as environment.
 - **Extra allowed hosts**, for a custom domain.
+- **Flash payment settings** — the checkout URL and the webhook signing secret, both optional (`null` when unset). Each is passed to the application as environment only when set.
 
 Everything else is passed as environment at start, and one of those values is computed rather than stored — see below.
 
@@ -116,13 +117,15 @@ One action.
 
 ### Configure
 
-Sets the default relay list and any extra hosts allowed for login.
+Sets the default relay list, any extra hosts allowed for login, and the Flash payment settings.
 
-- **What it changes:** both lists in the store.
+- **What it changes:** both lists and the two Flash fields in the store.
 - **Cost:** the service restarts, explicitly — the action requests it rather than relying on a reactive read.
 - **Repeat safety:** idempotent, pre-filled with the current values.
 - **Relays are validated** as `wss://` URLs by the form.
 - **Allowed hosts are additive.** The addresses StartOS assigns are always permitted; this list is for a custom domain the OS does not know about.
+- **Flash Checkout URL** (optional, must be `https://`) becomes `FLASH_CHECKOUT_URL`, the Flash plan signup URL; Readstr appends `?ref=<pubkey>` to it. Unset, the app's subscribe link goes nowhere.
+- **Flash Webhook Secret** (optional, masked, must start with `whsec_`) becomes `FLASH_WEBHOOK_SECRET`, the signing secret of the Flash webhook endpoint. Readstr verifies the `Flash-Signature` HMAC on every `POST` to `https://<your domain>/api/webhooks/flash` with it; unset, that endpoint answers 500 and no subscription is recorded. The form pre-fills it (masked) like the other fields. Blank fields are stored as `null`.
 
 Relays can also be managed inside the application; this list is the default the app starts from.
 
@@ -179,10 +182,12 @@ volumes:
   main: null # not mounted; holds start9/store.json only
   db: /var/lib/postgresql
 file_models:
-  - start9/store.json # dbPassword, defaultRelays, nip98AllowedHosts
+  - start9/store.json # dbPassword, defaultRelays, nip98AllowedHosts, flashCheckoutUrl, flashWebhookSecret
 startos_managed_env_vars:
   - DATABASE_URL
   - DEFAULT_RELAYS
+  - FLASH_CHECKOUT_URL # only when set in Configure
+  - FLASH_WEBHOOK_SECRET # only when set in Configure
   - NEXT_TELEMETRY_DISABLED
   - NIP98_ALLOWED_HOSTS # computed from the interface's current addresses plus user hosts
   - NPM_CONFIG_UPDATE_NOTIFIER # false; stops the entrypoint's npx from calling the npm registry
