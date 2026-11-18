@@ -29,6 +29,8 @@ const dict = {
   'Flash Webhook Secret': 20,
   'The signing secret (whsec_…) of your Flash webhook endpoint. Readstr uses it to verify the Flash-Signature on every request to /api/webhooks/flash and rejects requests without a valid one.': 21,
   'Must start with whsec_': 22,
+  'Flash API Key': 23,
+  'Optional. A Flash API key with the View Subscriptions scope. With it, Readstr checks the status of each subscriber with Flash instead of trusting webhook deliveries alone, which recovers from dropped or out-of-order webhooks. Only used when the Checkout URL is a Flash signup URL (/subscriptions/signup/<serviceId>/<planId>), so checks stay limited to that service.': 24,
 } as const
 
 /**

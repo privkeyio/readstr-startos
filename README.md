@@ -77,7 +77,7 @@ One model, holding four things.
 - **The database password**, generated once at install. The cluster was initialized with it, so it is not rotatable — and it is generated URL-safe because it is embedded in the connection string.
 - **The default relay list**, seeded from the package's defaults and passed to the application as environment.
 - **Extra allowed hosts**, for a custom domain.
-- **Flash payment settings** — the checkout URL and the webhook signing secret, both optional (`null` when unset). Each is passed to the application as environment only when set.
+- **Flash payment settings** — the checkout URL, the webhook signing secret and the API key, all optional (`null` when unset). Each is passed to the application as environment only when set; the API key also needs a service ID derived from the checkout URL (see below).
 
 Everything else is passed as environment at start, and one of those values is computed rather than stored — see below.
 
@@ -119,13 +119,15 @@ One action.
 
 Sets the default relay list, any extra hosts allowed for login, and the Flash payment settings.
 
-- **What it changes:** both lists and the two Flash fields in the store.
+- **What it changes:** both lists and the three Flash fields in the store.
 - **Cost:** the service restarts, explicitly — the action requests it rather than relying on a reactive read.
 - **Repeat safety:** idempotent, pre-filled with the current values.
 - **Relays are validated** as `wss://` URLs by the form.
 - **Allowed hosts are additive.** The addresses StartOS assigns are always permitted; this list is for a custom domain the OS does not know about.
 - **Flash Checkout URL** (optional, must be `https://`) becomes `FLASH_CHECKOUT_URL`, the Flash plan signup URL; Readstr appends `?ref=<pubkey>` to it. Unset, the app's subscribe link goes nowhere.
-- **Flash Webhook Secret** (optional, masked, must start with `whsec_`) becomes `FLASH_WEBHOOK_SECRET`, the signing secret of the Flash webhook endpoint. Readstr verifies the `Flash-Signature` HMAC on every `POST` to `https://<your domain>/api/webhooks/flash` with it; unset, that endpoint answers 500 and no subscription is recorded. The form pre-fills it (masked) like the other fields. Blank fields are stored as `null`.
+- **Flash Webhook Secret** (optional, masked, must start with `whsec_`) becomes `FLASH_WEBHOOK_SECRET`, the signing secret of the Flash webhook endpoint. Readstr verifies the `Flash-Signature` HMAC on every `POST` to `https://<your domain>/api/webhooks/flash` with it; unset, that endpoint answers 500 and notifications cannot update subscription state. The form pre-fills it (masked) like the other fields. Blank fields are stored as `null`.
+- **Flash API Key** (optional, masked) becomes `FLASH_API_KEY`; create it with only the **View Subscriptions** scope. Readstr calls Flash's API on the checkout URL's host, so it needs **Flash Checkout URL** too. With it, each webhook is checked against Flash's own subscription records, and a reader whose access is denied or about to run out is re-checked, within per-user and global rate limits, which recovers from dropped or out-of-order webhooks. If Flash can't be reached, the webhook is applied as before.
+- **Service scoping.** Reconciliation lists every subscription with the reader's pubkey, so on a Flash account with several services it must be limited to Readstr's. The package takes the service ID from the checkout URL (`/subscriptions/signup/<serviceId>/<planId>`) and passes it as `FLASH_SERVICE_ID`. When the URL has no service ID, the API key is not passed and Readstr relies on webhooks alone.
 
 Relays can also be managed inside the application; this list is the default the app starts from.
 
@@ -182,12 +184,14 @@ volumes:
   main: null # not mounted; holds start9/store.json only
   db: /var/lib/postgresql
 file_models:
-  - start9/store.json # dbPassword, defaultRelays, nip98AllowedHosts, flashCheckoutUrl, flashWebhookSecret
+  - start9/store.json # dbPassword, defaultRelays, nip98AllowedHosts, flashCheckoutUrl, flashWebhookSecret, flashApiKey
 startos_managed_env_vars:
   - DATABASE_URL
   - DEFAULT_RELAYS
   - FLASH_CHECKOUT_URL # only when set in Configure
   - FLASH_WEBHOOK_SECRET # only when set in Configure
+  - FLASH_API_KEY # only when set in Configure and FLASH_SERVICE_ID can be derived
+  - FLASH_SERVICE_ID # computed from the checkout URL's /subscriptions/signup/<serviceId>/ path, only alongside FLASH_API_KEY
   - NEXT_TELEMETRY_DISABLED
   - NIP98_ALLOWED_HOSTS # computed from the interface's current addresses plus user hosts
   - NPM_CONFIG_UPDATE_NOTIFIER # false; stops the entrypoint's npx from calling the npm registry

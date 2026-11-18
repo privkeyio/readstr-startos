@@ -25,6 +25,8 @@ export default {
     20: 'Secreto del webhook de Flash',
     21: 'El secreto de firma (whsec_…) de tu endpoint de webhook de Flash. Readstr lo usa para verificar la Flash-Signature de cada solicitud a /api/webhooks/flash y rechaza las solicitudes sin una firma válida.',
     22: 'Debe empezar por whsec_',
+    23: 'Clave API de Flash',
+    24: 'Opcional. Una clave API de Flash con el permiso View Subscriptions. Con ella, Readstr comprueba el estado de cada suscriptor con Flash en lugar de fiarse solo de los webhooks, lo que corrige webhooks perdidos o desordenados. Solo se usa si la URL de pago es una URL de suscripción de Flash (/subscriptions/signup/<serviceId>/<planId>), para que las comprobaciones se limiten a ese servicio.',
   },
   de_DE: {
     0: 'Readstr wird gestartet',
@@ -50,6 +52,8 @@ export default {
     20: 'Flash-Webhook-Secret',
     21: 'Das Signatur-Secret (whsec_…) deines Flash-Webhook-Endpunkts. Readstr prüft damit die Flash-Signature jeder Anfrage an /api/webhooks/flash und lehnt Anfragen ohne gültige Signatur ab.',
     22: 'Muss mit whsec_ beginnen',
+    23: 'Flash-API-Schlüssel',
+    24: 'Optional. Ein Flash-API-Schlüssel mit der Berechtigung View Subscriptions. Damit prüft Readstr den Status jedes Abonnenten bei Flash, statt sich nur auf Webhooks zu verlassen, und behebt so verlorene oder in falscher Reihenfolge eintreffende Webhooks. Wird nur verwendet, wenn die Checkout-URL eine Flash-Anmelde-URL ist (/subscriptions/signup/<serviceId>/<planId>), damit die Prüfungen auf diesen Dienst beschränkt bleiben.',
   },
   pl_PL: {
     0: 'Uruchamianie Readstr',
@@ -75,6 +79,8 @@ export default {
     20: 'Sekret webhooka Flash',
     21: 'Sekret podpisu (whsec_…) Twojego punktu końcowego webhooka Flash. Readstr używa go do weryfikacji nagłówka Flash-Signature każdego żądania do /api/webhooks/flash i odrzuca żądania bez prawidłowego podpisu.',
     22: 'Musi zaczynać się od whsec_',
+    23: 'Klucz API Flash',
+    24: 'Opcjonalnie. Klucz API Flash z uprawnieniem View Subscriptions. Dzięki niemu Readstr sprawdza status każdego subskrybenta we Flash zamiast polegać wyłącznie na webhookach, co naprawia utracone lub nieuporządkowane webhooki. Używany tylko, gdy adres URL płatności jest adresem rejestracji Flash (/subscriptions/signup/<serviceId>/<planId>), aby sprawdzanie dotyczyło wyłącznie tej usługi.',
   },
   fr_FR: {
     0: 'Démarrage de Readstr',
@@ -100,5 +106,7 @@ export default {
     20: 'Secret du webhook Flash',
     21: "Le secret de signature (whsec_…) de votre point de terminaison webhook Flash. Readstr l'utilise pour vérifier la Flash-Signature de chaque requête vers /api/webhooks/flash et rejette les requêtes sans signature valide.",
     22: 'Doit commencer par whsec_',
+    23: 'Clé API Flash',
+    24: 'Facultatif. Une clé API Flash avec l’autorisation View Subscriptions. Avec elle, Readstr vérifie le statut de chaque abonné auprès de Flash au lieu de se fier uniquement aux webhooks, ce qui corrige les webhooks perdus ou reçus dans le désordre. Utilisée seulement si l’URL de paiement est une URL d’inscription Flash (/subscriptions/signup/<serviceId>/<planId>), afin que les vérifications restent limitées à ce service.',
   },
 } satisfies Record<string, LangDict>

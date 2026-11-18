@@ -28,6 +28,7 @@ Use **Configure** to set:
 - **Allowed Hosts** — extra hostnames to accept for NIP-98 login, for custom domains you added yourself.
 - **Flash Checkout URL** — optional. Your Flash plan signup URL (`https://…`); Readstr adds `?ref=<pubkey>` so the subscribing reader can be identified.
 - **Flash Webhook Secret** — optional. The signing secret (`whsec_…`) of your Flash webhook endpoint; Readstr uses it to check that subscription notifications really come from Flash.
+- **Flash API Key** — optional. A Flash API key with only the **View Subscriptions** scope; Readstr uses it to check subscriptions with Flash directly, which recovers from missed or out-of-order notifications.
 
 Saving restarts the service so the new settings take effect.
 
@@ -35,6 +36,12 @@ Saving restarts the service so the new settings take effect.
 
 1. In your Flash dashboard, create a plan and copy its signup URL into **Flash Checkout URL**.
 2. Add a webhook endpoint in Flash pointing at `https://<your domain>/api/webhooks/flash`, where `<your domain>` is an address of this service that Flash can reach.
-3. Copy that endpoint's signing secret (`whsec_…`) into **Flash Webhook Secret** and save.
+3. Copy that endpoint's signing secret (`whsec_…`) into **Flash Webhook Secret**.
+4. Recommended: create a Flash API key with only the **View Subscriptions** scope and enter it in **Flash API Key**.
+5. Save. The service restarts with the new settings.
 
-Without the secret, Readstr rejects every Flash notification and no subscription is recorded.
+Keep the webhook secret and the API key private.
+
+Readstr checks only subscriptions to the Flash service in your checkout URL (`/subscriptions/signup/<serviceId>/<planId>`), so other services on the same Flash account can't grant access. If your checkout URL isn't in that form, the API key is ignored.
+
+Without the webhook secret, Readstr rejects every Flash notification. With the API key set, it can still pick up a reader's subscription when it next checks their access.

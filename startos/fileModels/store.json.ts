@@ -16,6 +16,7 @@ const storeConfigSchema = z.looseObject({
   // Flash payments, set via Configure; each is passed to the app only when set.
   flashCheckoutUrl: z.string().nullable().catch(null),
   flashWebhookSecret: z.string().nullable().catch(null),
+  flashApiKey: z.string().nullable().catch(null),
 })
 
 export type StoreConfig = z.infer<typeof storeConfigSchema>
