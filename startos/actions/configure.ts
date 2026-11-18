@@ -67,6 +67,16 @@ const inputSpec = InputSpec.of({
       },
     ],
   }),
+  flashApiKey: Value.text({
+    name: i18n('Flash API Key'),
+    description: i18n(
+      'Optional. A Flash API key with the View Subscriptions scope. With it, Readstr checks the status of each subscriber with Flash instead of trusting webhook deliveries alone, which recovers from dropped or out-of-order webhooks. Only used when the Checkout URL is a Flash signup URL (/subscriptions/signup/<serviceId>/<planId>), so checks stay limited to that service.',
+    ),
+    required: false,
+    default: null,
+    masked: true,
+    placeholder: null,
+  }),
 })
 
 const orNull = (v: string | null | undefined) => v?.trim() || null
@@ -91,6 +101,7 @@ export const configure = sdk.Action.withInput(
       nip98AllowedHosts: s?.nip98AllowedHosts ?? [],
       flashCheckoutUrl: s?.flashCheckoutUrl ?? null,
       flashWebhookSecret: s?.flashWebhookSecret ?? null,
+      flashApiKey: s?.flashApiKey ?? null,
     }
   },
   async ({ effects, input }) => {
@@ -105,6 +116,7 @@ export const configure = sdk.Action.withInput(
       nip98AllowedHosts: input.nip98AllowedHosts,
       flashCheckoutUrl: orNull(input.flashCheckoutUrl),
       flashWebhookSecret: orNull(input.flashWebhookSecret),
+      flashApiKey: orNull(input.flashApiKey),
     })
     await effects.restart()
     return {

@@ -2,7 +2,13 @@ import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
 import { uiHostId, uiInterfaceId } from './interfaces'
 import { sdk } from './sdk'
-import { postgresDb, postgresPort, postgresUser, uiPort } from './utils'
+import {
+  flashServiceIdFrom,
+  postgresDb,
+  postgresPort,
+  postgresUser,
+  uiPort,
+} from './utils'
 
 export const main = sdk.setupMain(async ({ effects }) => {
   console.info(i18n('Starting Readstr'))
@@ -72,6 +78,14 @@ export const main = sdk.setupMain(async ({ effects }) => {
   if (store.flashCheckoutUrl) env.FLASH_CHECKOUT_URL = store.flashCheckoutUrl
   if (store.flashWebhookSecret)
     env.FLASH_WEBHOOK_SECRET = store.flashWebhookSecret
+  // Reconciliation must stay on Readstr's own Flash service: unscoped, a
+  // subscription to any other service on the account with the reader's pubkey
+  // would grant access. So the key is only passed with a service ID to scope it.
+  const flashServiceId = flashServiceIdFrom(store.flashCheckoutUrl)
+  if (store.flashApiKey && flashServiceId) {
+    env.FLASH_API_KEY = store.flashApiKey
+    env.FLASH_SERVICE_ID = flashServiceId
+  }
 
   return sdk.Daemons.of(effects)
     .addDaemon('postgres', {
